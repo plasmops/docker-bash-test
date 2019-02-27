@@ -1,0 +1,47 @@
+variables:
+  # Short image name does not include stage or repository parts!
+  IMAGE: ${CI_PROJECT_NAMESPACE}/bash-test
+
+stages:
+  - build
+
+
+## Docker login/logout into/from registries templates (all dev registries now)
+#  Security sensitive be aware of what you are doing!!!
+#
+.login_hetzner_registry: &login_hetzner_registry |
+  docker login -u $HETZNER_DEVREGISTRY_LOGIN \
+               -p $HETZNER_DEVREGISTRY_PASS $HETZNER_DEVREGISTRY
+
+.docker_logout: &docker_logout |
+  rm -f ~/.docker/config.json
+
+
+build:dev:hetzner:
+  stage: build
+  tags: [be_build]
+  environment:
+    name: dev
+
+  before_script:
+    - *login_hetzner_registry
+  after_script:
+    - *docker_logout
+
+  script:
+
+    - docker image build --force-rm -t ${IMAGE} -f Dockerfile .
+
+    - |
+      # images to push
+      export PUSH_IMAGES="$HETZNER_DEVREGISTRY/$IMAGE"
+      echo $PUSH_IMAGES | xargs -n1 docker image tag ${IMAGE}
+    - |
+      # push images and clean up
+      echo $PUSH_IMAGES | xargs -n1 docker image push
+      echo "$IMAGE $PUSH_IMAGES" | xargs -n1 docker image rm
+
+  only:
+    # Feature branches are not currently used for CI
+    # - /PLIDFE-.*/
+    - master
