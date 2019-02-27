@@ -22,9 +22,7 @@ before_script:
 
 script:
   - |-
-      docker-build -v $VERSION -l "$LATESTS" "$NAMESPACE/$PROJECT" \
-        --build-arg tag=${VERSION%%-*} \
-        --build-arg version=${VERSION} \
+      docker-build -v latest "$NAMESPACE/$PROJECT" \
           -f Dockerfile ./ || exit $?
 
 # deploy containers to hub.docker.com
